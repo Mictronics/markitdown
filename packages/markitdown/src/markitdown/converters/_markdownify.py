@@ -5,6 +5,36 @@ from typing import Any, Optional
 from urllib.parse import quote, unquote, urlparse, urlunparse
 
 
+def _fix_math_escaping(text: str) -> str:
+    """Fix markdownify's incorrect escaping inside $...$ math blocks.
+
+    markdownify treats underscores and asterisks as emphasis markers and
+    escapes them inside math delimiters, producing $v\\_{c}$ instead of
+    $v_{c}$.  This post-processor restores the correct LaTeX inside both
+    inline ($...$) and display ($$...$$) math regions.
+    """
+
+    def _fix_delimiters(text: str) -> str:
+        return text.replace(r"\_", "_").replace(r"\*", "*")
+
+    # Fix display math $$...$$ first (may be multiline)
+    text = re.sub(
+        r"\$\$(.*?)\$\$",
+        lambda m: "$$" + _fix_delimiters(m.group(1)) + "$$",
+        text,
+        flags=re.DOTALL,
+    )
+
+    # Fix inline math $...$
+    text = re.sub(
+        r"\$([^$\n]+?)\$",
+        lambda m: "$" + _fix_delimiters(m.group(1)) + "$",
+        text,
+    )
+
+    return text
+
+
 class _CustomMarkdownify(markdownify.MarkdownConverter):
     """
     A custom version of markdownify's MarkdownConverter. Changes include:
@@ -13,6 +43,7 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
     - Removing javascript hyperlinks.
     - Truncating images with large data:uri sources.
     - Ensuring URIs are properly escaped, and do not conflict with Markdown syntax
+    - Fixing escaped underscores/asterisks inside math delimiters ($...$, $$...$$)
     """
 
     def __init__(self, **options: Any):
@@ -123,4 +154,5 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
         return ""
 
     def convert_soup(self, soup: Any) -> str:
-        return super().convert_soup(soup)  # type: ignore
+        result = super().convert_soup(soup)  # type: ignore
+        return _fix_math_escaping(result)
