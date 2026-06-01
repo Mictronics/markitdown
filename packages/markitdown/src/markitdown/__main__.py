@@ -2,15 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 import argparse
+import codecs
 import os
 import re
 import sys
-import codecs
-from typing import Any, Dict
-from textwrap import dedent
 from importlib.metadata import entry_points
+from textwrap import dedent
+from typing import Any, Dict
+
 from .__about__ import __version__
-from ._markitdown import MarkItDown, StreamInfo, DocumentConverterResult
+from ._markitdown import DocumentConverterResult, MarkItDown, StreamInfo
 
 
 def main():
@@ -18,8 +19,7 @@ def main():
         description="Convert various file formats to markdown.",
         prog="markitdown",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        usage=dedent(
-            """
+        usage=dedent("""
             SYNTAX:
 
                 markitdown <OPTIONAL: FILENAME>
@@ -44,8 +44,7 @@ def main():
                 OR
 
                 markitdown example.pdf > example.md
-            """
-        ).strip(),
+            """).strip(),
     )
 
     parser.add_argument(
